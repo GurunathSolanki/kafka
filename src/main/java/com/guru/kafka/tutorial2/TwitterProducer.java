@@ -91,6 +91,9 @@ public class TwitterProducer {
         // Enable compression for better performance
         properties.setProperty(COMPRESSION_TYPE_CONFIG, "snappy");
 
+        // Enable producer waiting so that many messages can be clubbed together in a batch.
+        properties.setProperty(LINGER_MS_CONFIG, "50");
+
         // Create producer
         return new KafkaProducer<>(properties);
     }
