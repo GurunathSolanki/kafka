@@ -93,6 +93,7 @@ public class TwitterProducer {
 
         // Enable producer waiting so that many messages can be clubbed together in a batch.
         properties.setProperty(LINGER_MS_CONFIG, "50");
+        properties.setProperty(BATCH_SIZE_CONFIG, Integer.toString(32*1024));
 
         // Create producer
         return new KafkaProducer<>(properties);
