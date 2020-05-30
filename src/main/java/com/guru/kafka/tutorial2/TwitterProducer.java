@@ -88,6 +88,9 @@ public class TwitterProducer {
         properties.setProperty(RETRIES_CONFIG, String.valueOf(Integer.MAX_VALUE));
         properties.setProperty(ACKS_CONFIG, "all");
 
+        // Enable compression for better performance
+        properties.setProperty(COMPRESSION_TYPE_CONFIG, "snappy");
+
         // Create producer
         return new KafkaProducer<>(properties);
     }
