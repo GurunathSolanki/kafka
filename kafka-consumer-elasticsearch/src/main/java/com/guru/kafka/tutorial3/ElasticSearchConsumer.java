@@ -12,8 +12,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -42,7 +42,10 @@ public class ElasticSearchConsumer {
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100L));
 
-            log.info("Received {} records", records.count());
+            int count = records.count();
+            log.info("Received {} records", count);
+
+            BulkRequest bulkRequest = new BulkRequest();
             for (ConsumerRecord<String, String> record : records) {
                 // Set the IndexRequest id to be unique to achieve idepotence.
                 // 1) Achieve Id from Kafka
@@ -54,25 +57,21 @@ public class ElasticSearchConsumer {
                 IndexRequest indexRequest = new IndexRequest("twitter").source(record.value(), XContentType.JSON);
                 indexRequest.id(id);
 
-                IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+                bulkRequest.add(indexRequest);
+            }
 
-                log.info("{}", indexResponse.getId());
+            if (count > 0) {
+                client.bulk(bulkRequest, RequestOptions.DEFAULT);
+
+                log.info("Committing offsets !!");
+                consumer.commitSync();
+                log.info("Offsets have been committed !!");
 
                 try {
-                    Thread.sleep(100L);
+                    Thread.sleep(1000L);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-            }
-
-            log.info("Committing offsets !!");
-            consumer.commitSync();
-            log.info("Offsets have been committed !!");
-
-            try {
-                Thread.sleep(1000L);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         }
     }
