@@ -41,6 +41,8 @@ public class ElasticSearchConsumer {
         // poll for new data
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100L));
+
+            log.info("Received {} records", records.count());
             for (ConsumerRecord<String, String> record : records) {
                 // Set the IndexRequest id to be unique to achieve idepotence.
                 // 1) Achieve Id from Kafka
@@ -57,10 +59,20 @@ public class ElasticSearchConsumer {
                 log.info("{}", indexResponse.getId());
 
                 try {
-                    Thread.sleep(2000L);
+                    Thread.sleep(100L);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+            }
+
+            log.info("Committing offsets !!");
+            consumer.commitSync();
+            log.info("Offsets have been committed !!");
+
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -100,6 +112,10 @@ public class ElasticSearchConsumer {
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, MY_JAVA_APP);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        properties.setProperty(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10");
+
+        // Disable auto commit
+        properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 
         // Create consumer
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
